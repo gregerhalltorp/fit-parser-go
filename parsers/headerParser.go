@@ -12,6 +12,13 @@ import (
 
 // "./fitTypes"
 
+func getCrc(headerSize int, hArr []byte) uint16 {
+	if headerSize == constants.HeaderWithCRCSize {
+		return binary.LittleEndian.Uint16(hArr[11:])
+	}
+	return 0
+}
+
 func ParseHeader(headerSize int, f *os.File) *fitTypes.Header {
 	hArr := utils.ByteReader(f, headerSize-1)
 	protVer := hArr[0]
@@ -28,13 +35,7 @@ func ParseHeader(headerSize int, f *os.File) *fitTypes.Header {
 	dataSize := binary.LittleEndian.Uint32(hArr[3:])
 	dataType := string(hArr[7:11])
 
-	header := fitTypes.NewHeader(headerSize, protVer, profileVersion, dataSize, dataType)
-
-	if headerSize == constants.HeaderWithCRCSize {
-		header.Crc = binary.LittleEndian.Uint16(hArr[11:])
-	} else {
-		header.Crc = 0
-	}
+	header := fitTypes.NewHeader(headerSize, protVer, profileVersion, dataSize, dataType, getCrc(headerSize, hArr))
 
 	return header
 }

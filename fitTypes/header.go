@@ -14,13 +14,15 @@ func NewHeader(
 	protocolVersion byte,
 	profileVersion uint16,
 	dataSize uint32,
-	dataType string) *Header {
+	dataType string,
+	crc uint16) *Header {
 	h := Header{
 		Size:            size,
 		ProtocolVersion: protocolVersion,
 		ProfileVersion:  profileVersion,
 		DataSize:        dataSize,
 		DataType:        dataType,
+		Crc:             crc,
 	}
 	return &h
 }

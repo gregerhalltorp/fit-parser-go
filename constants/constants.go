@@ -8,3 +8,7 @@ const ProtocolVersionCheck byte = ProtocolMajorVersion << ProtocolVersionMajorSh
 const HeaderWithCRCSize = 14
 const HeaderWithoutCRCSize = 12
 const MesgDefinitionMask byte = 0x40
+const CompressedHeaderMask byte = 0x80
+const MesgHeaderMask byte = 0x00
+const BigEndian byte = 0x01
+const LocalMesgNumMask byte = 0x0F

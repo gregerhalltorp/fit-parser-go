@@ -17,11 +17,14 @@ func main() {
 
 	fileName := os.Args[1]
 	f, err := os.Open(fileName)
+	defer f.Close()
 	utils.Check(err)
 
 	hsArr := utils.ByteReader(f, 1)
 	headerSize := int(hsArr[0])
 	header := parsers.ParseHeader(headerSize, f)
+
+	parsers.ParseMessages(headerSize, header.DataSize, f)
 
 	fmt.Println(header)
 }
