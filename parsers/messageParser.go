@@ -2,11 +2,14 @@ package parsers
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"../constants"
+	"../constants/mesgNum"
 	"../fitTypes"
+	"../profile"
 	"../utils"
 )
 
@@ -36,10 +39,24 @@ func parseDefinitionMessage(headerByte byte, f *os.File) (int, fitTypes.Definiti
 	)
 }
 
+func parseMessage(headerByte byte, definitionMessage fitTypes.DefinitionMessage, f *os.File) int {
+	fieldsSize := definitionMessage.GetMessageSize() - 1 // The header is already read
+	fmt.Println("#####", fieldsSize)
+	utils.ByteReader(f, fieldsSize)
+	if definitionMessage.GlobalMessageNumber == mesgNum.FileId {
+		message := profile.CreateMessage(definitionMessage.GlobalMessageNumber)
+		fmt.Println("fileId!", message)
+		// Set the right endian reader depending on definitionMessage.IsBigEndian
+	}
+	return 1 + fieldsSize
+}
+
 func ParseMessages(headerSize int, fileSize uint32, f *os.File) {
 	definitionMessages := make(map[byte]fitTypes.DefinitionMessage)
 	position := headerSize
-	for uint32(position) < fileSize-2 {
+	MAX_MSG := 4
+	msgRead := 0
+	for uint32(position) < fileSize-2 && msgRead < MAX_MSG {
 		headerByte := utils.ByteReader(f, 1)
 		localMessageNumber := headerByte[0] & constants.LocalMesgNumMask
 		if headerByte[0]&constants.MesgDefinitionMask == constants.MesgDefinitionMask {
@@ -48,17 +65,25 @@ func ParseMessages(headerSize int, fileSize uint32, f *os.File) {
 			position = pos
 			definitionMessages[dm.LocalMessageNumber] = dm
 			fmt.Println(pos, definitionMessages)
+			msgRead++
 		} else if headerByte[0]&constants.CompressedHeaderMask == constants.CompressedHeaderMask {
 			fmt.Println("Got a compressed header message")
 			os.Exit(0)
 		} else if headerByte[0]&constants.MesgDefinitionMask == constants.MesgHeaderMask {
-			_, present := definitionMessages[localMessageNumber]
+			definitionMessage, present := definitionMessages[localMessageNumber]
 			if !present {
 				mesg := fmt.Sprintf("Missing definition message for message number %d", localMessageNumber)
 				panic(mesg)
 			}
 			fmt.Println("Got a normal header message", localMessageNumber)
-			os.Exit(0)
+			pos := parseMessage(headerByte[0], definitionMessage, f)
+			position = pos
+			b, err := json.Marshal(definitionMessage)
+			if err != nil {
+				fmt.Println("ERROR", err)
+			}
+			fmt.Println(string(b))
+			msgRead++
 		}
 	}
 }
